@@ -21,7 +21,7 @@ class D:
             return len(self.data)
         start = self[k-1]
         end = self[k+1]
-        data = np.array(self.data["values"][start:end])
+        data = self.data[start:end]
         dk_list = range(start+1, end)
         error_list = np.array([self.error(data, self.step(a[k-1], a[k], start, end, dk)) for dk in dk_list])
         dk = dk_list[error_list.argmin()]
@@ -42,7 +42,16 @@ class D:
 
 class A:
     def __init__(self, d: D, data, K):
-        self.li = np.array([data[d[i]:d[i+1]]["values"].mean() for i in range(K)])
+        #print(d, K)
+        #print([ data[d[i]:d[i+1]] for i in range(K)])
+        #print([ data[d[i]:d[i+1]].mean() for i in range(K)])
+        self.li = np.array([ self.mean(data[d[i]:d[i+1]], data[i]) for i in range(K)])
+    @staticmethod
+    def mean(data, di):
+        if len(data)==0:
+            return di
+        else:
+            return np.mean(data)
     def __getitem__(self, item):
         return self.li[item]
     def __len__(self):
@@ -70,13 +79,14 @@ class Model:
 class ModelK:
     def __init__(self, data, K):
         self.data = data
+        self.data_ndarray = np.array(data["values"])
         self.K = K
         self.optimize()
 
     def optimize(self):
-        d = D(self.data, self.K)
+        d = D(self.data_ndarray, self.K)
         for i in range(3):
-            a = A(d, self.data, self.K)
+            a = A(d, self.data_ndarray, self.K)
             d.optimize(a)
         self.optimized = {"a": a, "d": d}
 
@@ -93,13 +103,13 @@ class ModelK:
         return self.optimized["d"]
 
     def var(self):
-        return (self.data["values"]-self.model()).var(ddof=1)
+        return (self.data_ndarray-self.model()).var(ddof=1)
 
     def single_plateu(self, i):
         return self.data[self.optimized["d"][i]:self.optimized["d"][i+1]]
 
     def log_likelihood(self):
-        return sum([norm.logpdf(err) for err in self.data["values"]-self.model()])
+        return sum([norm.logpdf(err) for err in self.data_ndarray-self.model()])
     def plot(self):
         time = self.data["time"]
         plt.plot(time, self.data["values"], label="raw")
