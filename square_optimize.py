@@ -21,8 +21,8 @@ class D:
             return len(self.data)
         start = self[k-1]
         end = self[k+1]
-        data = self.data["values"][start:end]
-        dk_list = range(start+1, end-1)
+        data = np.array(self.data["values"][start:end])
+        dk_list = range(start+1, end)
         error_list = np.array([self.error(data, self.step(a[k-1], a[k], start, end, dk)) for dk in dk_list])
         dk = dk_list[error_list.argmin()]
         return dk
@@ -61,7 +61,12 @@ class Model:
         self.optimized = models[ic_list.argmin()]
     def plot(self):
         self.optimized.plot()
-
+    @property
+    def A(self):
+        return self.optimized.A
+    @property
+    def D(self):
+        return self.optimized.D
 class ModelK:
     def __init__(self, data, K):
         self.data = data
@@ -79,6 +84,13 @@ class ModelK:
         a = self.optimized["a"]
         d = self.optimized["d"]
         return np.concatenate([np.full(d[k+1]-d[k], a[k]) for k in range(len(a))])
+    
+    @property
+    def A(self):
+        return self.optimized["a"]
+    @property
+    def D(self):
+        return self.optimized["d"]
 
     def var(self):
         return (self.data["values"]-self.model()).var(ddof=1)
@@ -90,8 +102,11 @@ class ModelK:
         return sum([norm.logpdf(err) for err in self.data["values"]-self.model()])
     def plot(self):
         time = self.data["time"]
-        plt.plot(time, self.data["values"])
-        plt.plot(time, self.model())
+        plt.plot(time, self.data["values"], label="raw")
+        plt.plot(time, self.model(), label="model")
+        plt.legend()
+        plt.show()
+        
     def ic(self):
         return self.bic()
     def aic(self):
@@ -123,9 +138,17 @@ class ModelKTotalData:
         self.after_event = ModelK(ef.after_event(), 1)
     def plot(self):
         time = self.data["time"]
-        plt.plot(time, self.data["values"])
-        plt.plot(time, self.model())
+        plt.plot(time, self.data["values"], label="raw")
+        plt.plot(time, self.model(), label="model")
+        plt.legend()
+        plt.show()
     def ic(self):
         return self.event.ic()
     def model(self):
         return np.concatenate([self.before_event.model(), self.event.model(), self.after_event.model()])
+    @property
+    def A(self):
+        return self.event.A
+    @property
+    def D(self):
+        return self.event.D
