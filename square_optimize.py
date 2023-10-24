@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.stats import norm
+import math
 
 
 class D:
@@ -55,7 +56,7 @@ class Model:
         self.Kmax = Kmax
         self.optimize()
     def optimize(self):
-        models = [ModelK(self.data, K) for K in range(1, self.Kmax)]
+        models = [ModelKTotalData(self.data, K) for K in range(1, self.Kmax+1)]
         ic_list = np.array([model.ic() for model in models])
         self.optimized = models[ic_list.argmin()]
     def plot(self):
@@ -66,6 +67,7 @@ class ModelK:
         self.data = data
         self.K = K
         self.optimize()
+
     def optimize(self):
         d = D(self.data, self.K)
         for i in range(3):
@@ -80,6 +82,10 @@ class ModelK:
 
     def var(self):
         return (self.data["values"]-self.model()).var(ddof=1)
+
+    def single_plateu(self, i):
+        return self.data[self.optimized["d"][i]:self.optimized["d"][i+1]]
+
     def log_likelihood(self):
         return sum([norm.logpdf(err) for err in self.data["values"]-self.model()])
     def plot(self):
@@ -87,7 +93,39 @@ class ModelK:
         plt.plot(time, self.data["values"])
         plt.plot(time, self.model())
     def ic(self):
-        return self.aic()
+        return self.bic()
     def aic(self):
         k = 2*self.K - 2
         return -2 * self.log_likelihood() + 2 * k
+    def bic(self):
+        k = 2*self.K - 2
+        n = len(self.data)
+        return -2 * self.log_likelihood() + k * math.log(n)
+        
+
+class EventFinder:
+    def __init__(self, data):
+        self.data = data
+        self.model = ModelK(data, 3)
+    def event(self):
+        return self.model.single_plateu(1)
+    def before_event(self):
+        return self.model.single_plateu(0)
+    def after_event(self):
+        return self.model.single_plateu(2)
+
+class ModelKTotalData:
+    def __init__(self, data, K):
+        self.data = data
+        ef = EventFinder(data)
+        self.event = ModelK(ef.event(), K)
+        self.before_event = ModelK(ef.before_event(), 1)
+        self.after_event = ModelK(ef.after_event(), 1)
+    def plot(self):
+        time = self.data["time"]
+        plt.plot(time, self.data["values"])
+        plt.plot(time, self.model())
+    def ic(self):
+        return self.event.ic()
+    def model(self):
+        return np.concatenate([self.before_event.model(), self.event.model(), self.after_event.model()])
