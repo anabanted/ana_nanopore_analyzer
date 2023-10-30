@@ -109,7 +109,9 @@ class ModelK:
         return self.data[self.optimized["d"][i]:self.optimized["d"][i+1]]
 
     def log_likelihood(self):
-        return sum([norm.logpdf(err) for err in self.data_ndarray-self.model()])
+        error = self.data_ndarray-self.model()
+        scale = error.std(ddof=1)
+        return sum([norm.logpdf(err, scale=scale) for err in error])
     def plot(self):
         time = self.data["time"]
         plt.plot(time, self.data["values"], label="raw")
