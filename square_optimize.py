@@ -21,6 +21,8 @@ class D:
             return len(self.data)
         start = self[k-1]
         end = self[k+1]
+        if start+1>=end:
+            return self[k]
         data = self.data[start:end]
         dk_list = range(start+1, end)
         error_list = np.array([self.error(data, self.step(a[k-1], a[k], start, end, dk)) for dk in dk_list])
@@ -42,10 +44,7 @@ class D:
 
 class A:
     def __init__(self, d: D, data, K):
-        #print(d, K)
-        #print([ data[d[i]:d[i+1]] for i in range(K)])
-        #print([ data[d[i]:d[i+1]].mean() for i in range(K)])
-        self.li = np.array([ self.mean(data[d[i]:d[i+1]], data[i]) for i in range(K)])
+        self.li = np.array([self.mean(data[d[i]:d[i+1]], data[d[i]]) for i in range(K)])
     @staticmethod
     def mean(data, di):
         if len(data)==0:
@@ -111,6 +110,8 @@ class ModelK:
     def log_likelihood(self):
         error = self.data_ndarray-self.model()
         scale = error.std(ddof=1)
+        if scale==0:
+            return 0
         return sum([norm.logpdf(err, scale=scale) for err in error])
     def plot(self):
         time = self.data["time"]
@@ -140,6 +141,12 @@ class EventFinder:
         return self.model.single_plateu(0)
     def after_event(self):
         return self.model.single_plateu(2)
+    def dwell_time(self):
+        time = self.event()["time"]
+        if len(time)==0:
+            return 0
+        return time.iloc[-1] - time.iloc[0]
+        
 
 class ModelKTotalData:
     def __init__(self, data, K):

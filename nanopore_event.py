@@ -8,10 +8,12 @@ class Event:
         self.event = pd.read_csv(event_path, names = ["time", "raw", "fit", "filter"])
     def max_current(self):
         return self.event["raw"].max()
-    def dwell_time(self, threshold):
+    def _dwell_time(self, threshold):
         if self.event["raw"].max()<=threshold:
             return 0
         return self.event[self.event["raw"]>threshold].index[-1] - self.event[self.event["raw"]>threshold].index[0]
+    def dwell_time(self):
+        return square_optimize.EventFinder(self._data()).dwell_time()
         
     def plot(self):
         self.event.plot(x="time", y="raw")
@@ -27,7 +29,7 @@ class Event:
         if K is None:
             model = square_optimize.Model(data, Kmax=Kmax)
         else:
-            model = square_optimize.ModelK(data, K=K)
+            model = square_optimize.ModelKTotalData(data, K=K)
         return model
     def count_peak(self, K=None, Kmax=5):
         a = self.model(K=K, Kmax=Kmax).A
@@ -50,8 +52,9 @@ class Event:
 class AllEvent:
     def __init__(self, event_list):
         self.event_list = event_list
-    def scatter_dwelltime_maxcurrent(self, threshold, xscale='log', yscale='linear', right=None):
-        dwell_times = list(map(lambda event_path: Event(event_path).dwell_time(threshold), self.event_list))
+    def scatter_dwelltime_maxcurrent(self, xscale='log', yscale='linear', right=None):
+        #dwell_times = list(map(lambda event_path: Event(event_path).dwell_time(threshold), self.event_list))
+        dwell_times = list(map(lambda event_path: Event(event_path).dwell_time(), self.event_list))
         max_current = list(map(lambda event_path: Event(event_path).max_current(), self.event_list))
         ax = plt.gca()
         ax.scatter(dwell_times, max_current)
