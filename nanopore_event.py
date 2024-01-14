@@ -1,7 +1,7 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
-import square_optimize
+from . import square_optimize
 
 
 class Event:
@@ -30,7 +30,10 @@ class Event:
         return square_optimize.EventFinder(self._data()).dwell_time()
 
     def plot(self):
-        self.event.plot(x="time", y="raw")
+        ax = self.event.plot(x="time", y="raw")
+        ax.set_xlabel("time /us")
+        ax.set_ylabel("current /pA")
+        plt.show()
 
     def plot_opt(self, K=None, Kmax=3):
         model = self.model(K=K, Kmax=Kmax)

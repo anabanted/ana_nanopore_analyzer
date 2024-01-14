@@ -199,6 +199,8 @@ class ModelKTotalData:
         time = self.data["time"]
         plt.plot(time, self.data["values"], label="raw")
         plt.plot(time, self.model(), label="model")
+        plt.xlabel("time /us")
+        plt.ylabel("current /pA")
         plt.legend()
         plt.show()
 
