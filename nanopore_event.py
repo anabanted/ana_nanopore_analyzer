@@ -33,6 +33,7 @@ class Event:
         ax = self.event.plot(x="time", y="raw")
         ax.set_xlabel("time /us")
         ax.set_ylabel("current /pA")
+        ax.invert_yaxis()
         plt.show()
 
     def plot_opt(self, K=None, Kmax=3):

@@ -197,11 +197,13 @@ class ModelKTotalData:
 
     def plot(self):
         time = self.data["time"]
-        plt.plot(time, self.data["values"], label="raw")
-        plt.plot(time, self.model(), label="model")
-        plt.xlabel("time /us")
-        plt.ylabel("current /pA")
-        plt.legend()
+        fig, ax = plt.subplots()
+        ax.plot(time, self.data["values"], label="raw")
+        ax.plot(time, self.model(), label="model")
+        ax.set_xlabel("time /us")
+        ax.set_ylabel("current /pA")
+        ax.invert_yaxis()
+        ax.legend()
         plt.show()
 
     def ic(self):
